@@ -19,17 +19,12 @@ const express = require('express');
 const fetch = require('node-fetch');
 const request = require('request');
 const config = require('config');
+const fbActions = require('./fbActions');
+//const fbApp = require('./fbApp');
 
-let Wit = null;
-let log = null;
-try {
-  // if running from repo
-  Wit = require('../').Wit;
-  log = require('../').log;
-} catch (e) {
-  Wit = require('node-wit').Wit;
-  log = require('node-wit').log;
-}
+let Wit = require('node-wit').Wit;
+let log = require('node-wit').log;
+
 
 // Webserver parameter
 const PORT = process.env.PORT || 8445;
@@ -42,11 +37,6 @@ const FB_PAGE_TOKEN = config.get('pageAccessToken');
 const FB_APP_SECRET = config.get('appSecret');
 
 let FB_VERIFY_TOKEN = 'yoonah';
-// crypto.randomBytes(8, (err, buff) => {
-//   if (err) throw err;
-//   FB_VERIFY_TOKEN = buff.toString('hex');
-//   console.log(`/webhook will accept the Verify Token "${FB_VERIFY_TOKEN}"`);
-// });
 
 // ----------------------------------------------------------------------------
 // Messenger API specific code
@@ -127,7 +117,26 @@ const actions = {
   },
   // You should implement your custom actions here
   // See https://wit.ai/docs/quickstart
+  setRestaurantFoodType({context, entities}) {
+    context.cuisine = entities.restaurantFood;
+    console.log('RESTAURANT FOOD: CONTEXT', context)
+    console.log('RESTAURANT FOOD: ENTITIES', entities)
 
+    return new Promise(function(resolve, reject) {
+      // Here should go the api call, e.g.:
+      // context.forecast = apiCall(context.loc)
+      return resolve(context);
+    })
+  },
+  setLocation({context, entities}) {
+    let location = entities['wit/location'];
+    console.log('RESTAURANT LOCATION: CONTEXT', context)
+    console.log('RESTAURANT LOCATION: ENTITIES', entities)
+  },
+  setRestaurantPrice({context, entities}) {
+    let price = entities.restaurantPrice;
+    return resolve(context);
+  },
   getRestaurant({context, entities}) {
     var yelpRestaurant = '';
     console.log("the context is: ", context);
@@ -136,7 +145,8 @@ const actions = {
       // Here should go the api call, e.g.:
       // context.forecast = apiCall(context.loc)
 
-      request( createYelpRequest(entities.location[0].value, entities.intent[0].value), function(error, response, body){
+      //entities.location[0].value, entities.intent[0].value
+      request( fbActions.createYelpRequest(context['wit/location'], 'restaurant'), function(error, response, body){
       if (!error && response.statusCode == 200) {
         console.log('NEW YELP BUSINESSES', response.body.businesses[0].name)
         yelpRestaurant = response.body.businesses[0].name;
@@ -149,24 +159,9 @@ const actions = {
       }
       });
     });
-  }
-};
+  },
 
-function createYelpRequest(location, term) {
-  return {
-    uri: 'https://api.yelp.com/v3/businesses/search',
-    qs: {
-      location: location,
-      term: term,
-      limit: 2
-    },
-    auth: {
-      bearer: YELP_ACCESS_TOKEN
-    },
-    method: 'GET',
-    json: true
-  }
-}
+};
 
 // Setting up our bot
 const wit = new Wit({
@@ -187,7 +182,6 @@ app.use(bodyParser.json({ verify: verifyRequestSignature }));
 
 // Webhook setup
 app.get('/webhook', (req, res) => {
-  console.log('FACEBOOK REACHED WEBHOOK');
   if (req.query['hub.mode'] === 'subscribe' &&
     req.query['hub.verify_token'] === FB_VERIFY_TOKEN) {
     res.send(req.query['hub.challenge']);
@@ -202,7 +196,7 @@ app.post('/webhook', (req, res) => {
   // See the Webhook reference
   // https://developers.facebook.com/docs/messenger-platform/webhook-reference
   const data = req.body;
-
+console.log('inside NODE-WIT post route');
   if (data.object === 'page') {
     data.entry.forEach(entry => {
       entry.messaging.forEach(event => {
