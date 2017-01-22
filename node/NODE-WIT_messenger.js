@@ -129,14 +129,44 @@ const actions = {
   // See https://wit.ai/docs/quickstart
 
   getRestaurant({context, entities}) {
+    var yelpRestaurant = '';
+    console.log("the context is: ", context);
+    console.log("the entities are: ", entities);
     return new Promise(function(resolve, reject) {
       // Here should go the api call, e.g.:
       // context.forecast = apiCall(context.loc)
-      context.forecast = 'sunny';
-      return resolve(context);
+
+      request( createYelpRequest(entities.location[0].value, entities.intent[0].value), function(error, response, body){
+      if (!error && response.statusCode == 200) {
+        console.log('NEW YELP BUSINESSES', response.body.businesses[0].name)
+        yelpRestaurant = response.body.businesses[0].name;
+        console.log("yelp restaurants are ------", yelpRestaurant);
+        context.restaurant = yelpRestaurant;
+        return resolve(context);
+
+      } else {
+        console.error("Failed calling Yelp API", response.statusCode, response.statusMessage, body.error);
+      }
+      });
     });
   }
 };
+
+function createYelpRequest(location, term) {
+  return {
+    uri: 'https://api.yelp.com/v3/businesses/search',
+    qs: {
+      location: location,
+      term: term,
+      limit: 2
+    },
+    auth: {
+      bearer: YELP_ACCESS_TOKEN
+    },
+    method: 'GET',
+    json: true
+  }
+}
 
 // Setting up our bot
 const wit = new Wit({
