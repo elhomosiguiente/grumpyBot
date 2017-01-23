@@ -64,6 +64,34 @@ const fbMessage = (id, text) => {
   });
 };
 
+// const fbMessage = (id, text) => {
+//   const body = JSON.stringify({
+//     recipient: {
+//       id
+//     },
+//     message: {
+//       attachment: {
+//         type: "image",
+//         payload: {
+//           url: "https://s3-media1.fl.yelpcdn.com/bphoto/xa-ZbH7RFj6Zu16_rLoQxQ/o.jpg"
+//         }
+//       }
+//     }
+//   });
+//   const qs = 'access_token=' + encodeURIComponent(FB_PAGE_TOKEN);
+//   return fetch('https://graph.facebook.com/me/messages?' + qs, {
+//     method: 'POST',
+//     body,
+//   })
+//   .then(rsp => rsp.json())
+//   .then(json => {
+//     if (json.error && json.error.message) {
+//       throw new Error(json.error.message);
+//     }
+//     return json;
+//   });
+// };
+
 // ----------------------------------------------------------------------------
 // Wit.ai bot specific code
 
@@ -129,7 +157,7 @@ const actions = {
   // You should implement your custom actions here
   // See https://wit.ai/docs/quickstart
   setRestaurantFoodType({context, entities}) {
-    context.cuisine = entities.restaurantFood;
+    context.cuisine = entities.restaurantFood[0].value
     console.log('RESTAURANT FOOD: CONTEXT', context)
     console.log('RESTAURANT FOOD: ENTITIES', entities)
 
@@ -164,12 +192,14 @@ const actions = {
       // context.forecast = apiCall(context.loc)
 
       //entities.location[0].value, entities.intent[0].value
-      request( fbActions.createYelpRequest(context.location, context.intent[0].value), function(error, response, body){
+      request( fbActions.createYelpRequest(context.location, [context.intent[0].value, context.cuisine]), function(error, response, body){
       if (!error && response.statusCode == 200) {
-        console.log('NEW YELP BUSINESSES', response.body.businesses[0].name)
-        yelpRestaurant = response.body.businesses[0].name;
+        console.log('NEW YELP BUSINESSES', response.body.businesses[0])
+        yelpRestaurant = response.body.businesses[0].name + " rating: " + response.body.businesses[0].rating + " phone: " + response.body.businesses[0].phone + " address: " + response.body.businesses[0].location.address1;
         console.log("yelp restaurants are ------", yelpRestaurant);
         context.response = yelpRestaurant;
+        context.url = response.body.businesses[0].url;
+        context.number = response.body.businesses[0].display_phone;
         return resolve(context);
 
       } else {

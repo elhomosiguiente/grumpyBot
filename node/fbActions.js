@@ -47,7 +47,8 @@ function createYelpRequest(location, term) {
     uri: 'https://api.yelp.com/v3/businesses/search',
     qs: {
       location: location,
-      term: term,
+      term: term[0],
+      term: term[1] || " ",
       limit: 2
     },
     auth: {
