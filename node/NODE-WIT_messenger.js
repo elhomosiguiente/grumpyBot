@@ -115,6 +115,17 @@ const actions = {
       return Promise.resolve()
     }
   },
+  setIntent({context, entities}) {
+    context.intent = entities.intent;
+    console.log('INTENT: CONTEXT', context)
+    console.log('INTENT: ENTITIES', entities)
+
+    return new Promise(function(resolve, reject) {
+      // Here should go the api call, e.g.:
+      // context.forecast = apiCall(context.loc)
+      return resolve(context);
+    })
+  },
   // You should implement your custom actions here
   // See https://wit.ai/docs/quickstart
   setRestaurantFoodType({context, entities}) {
@@ -129,29 +140,36 @@ const actions = {
     })
   },
   setLocation({context, entities}) {
-    let location = entities['wit/location'];
+     context.location = entities.location[0].value;
     console.log('RESTAURANT LOCATION: CONTEXT', context)
     console.log('RESTAURANT LOCATION: ENTITIES', entities)
+    return new Promise(function(resolve,reject){
+      return resolve(context);
+    })
   },
   setRestaurantPrice({context, entities}) {
-    let price = entities.restaurantPrice;
-    return resolve(context);
+    console.log('RESTAURANT PRICE: CONTEXT', context)
+    console.log('RESTAURANT PRICE: ENTITIES', entities)
+     context.price = entities.restaurantPrice;
+    return new Promise(function(resolve, reject){
+      return resolve(context);
+    });
   },
   getRestaurant({context, entities}) {
     var yelpRestaurant = '';
-    console.log("the context is: ", context);
-    console.log("the entities are: ", entities);
+    console.log('GETRESTAURANT: CONTEXT', context)
+    console.log('GETRESTAURANT: ENTITIES', entities)
     return new Promise(function(resolve, reject) {
       // Here should go the api call, e.g.:
       // context.forecast = apiCall(context.loc)
 
       //entities.location[0].value, entities.intent[0].value
-      request( fbActions.createYelpRequest(context['wit/location'], 'restaurant'), function(error, response, body){
+      request( fbActions.createYelpRequest(context.location, context.intent[0].value), function(error, response, body){
       if (!error && response.statusCode == 200) {
         console.log('NEW YELP BUSINESSES', response.body.businesses[0].name)
         yelpRestaurant = response.body.businesses[0].name;
         console.log("yelp restaurants are ------", yelpRestaurant);
-        context.restaurant = yelpRestaurant;
+        context.response = yelpRestaurant;
         return resolve(context);
 
       } else {
@@ -196,7 +214,6 @@ app.post('/webhook', (req, res) => {
   // See the Webhook reference
   // https://developers.facebook.com/docs/messenger-platform/webhook-reference
   const data = req.body;
-console.log('inside NODE-WIT post route');
   if (data.object === 'page') {
     data.entry.forEach(entry => {
       entry.messaging.forEach(event => {
