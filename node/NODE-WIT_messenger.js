@@ -200,6 +200,7 @@ const actions = {
         context.response = yelpRestaurant;
         context.url = response.body.businesses[0].url;
         context.number = response.body.businesses[0].display_phone;
+        context.second = response.body.businesses[1].name + " rating: " + response.body.businesses[1].rating + " phone: " + response.body.businesses[1].phone + " address: " + response.body.businesses[1].location.address1;
         return resolve(context);
 
       } else {
