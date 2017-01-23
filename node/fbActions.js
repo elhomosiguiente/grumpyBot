@@ -7,6 +7,7 @@ const PAGE_ACCESS_TOKEN = config.get('pageAccessToken');
 
 module.exports = {
   sendYelp,
+  createYelpRequest,
   sendImageMessage,
   sendGifMessage,
   sendTextMessage,
